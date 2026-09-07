@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEMA DE CONTROL EDUCATIVO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333; }
+        .header-bg { background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%); position: relative; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .hidden-admin-btn { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; background-color: rgba(255,255,255,0.08); border-radius: 50%; cursor: pointer; border: none; transition: background-color 0.3s; z-index: 10; }
+        .hidden-admin-btn:hover { background-color: rgba(255,255,255,0.3); }
+        .nav-tabs .nav-link { border: none; border-radius: 8px 8px 0 0; color: #555; font-weight: 500; }
+        .nav-tabs .nav-link.active { font-weight: bold; color: #fff; background-color: #1a237e; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.08); }
+        .form-control, .form-select { border-radius: 8px; border: 1px solid #ddd; }
+        .form-control:focus, .form-select:focus { border-color: #3949ab; box-shadow: 0 0 0 0.2rem rgba(57, 73, 171, 0.15); }
+        .btn { border-radius: 8px; font-weight: 500; }
+        .btn-primary { background-color: #1a237e; border-color: #1a237e; }
+        .btn-primary:hover { background-color: #3949ab; border-color: #3949ab; }
+        .table-container { max-height: 450px; overflow-y: auto; border-radius: 8px; }
+        .table thead th { background-color: #343a40 !important; color: white !important; position: sticky; top: 0; z-index: 1; }
+    </style>
+</head>
+<body>
+
+<div class="header-bg text-white text-center py-5 mb-4">
+    <h4 class="mb-0 fw-bold">SISTEMA DE CONTROL EDUCATIVO</h4>
+    <button class="hidden-admin-btn" onclick="showAdminLogin()" title=""></button>
+</div>
+
+<div class="container-fluid px-4 mb-5">
+    <div id="view_acceso" class="row justify-content-center">
+        <div class="col-md-5"><div class="card shadow-sm"><div class="card-body p-5">
+            <h3 class="text-center text-primary mb-4 fw-bold">Acceso al Sistema</h3>
+            <div class="mb-3"><label class="form-label fw-bold">ACCESO UNIDAD:</label><input type="text" id="codigoUnidad" class="form-control form-control-lg" placeholder="Código numérico"></div>
+            <div class="d-grid"><button class="btn btn-primary btn-lg" style="background-color: #6a1b9a; border:none;" onclick="ingresarUnidad()">Ingresar</button></div>
+        </div></div></div>
+    </div>
+
+    <div id="view_roles" class="row justify-content-center" style="display:none;">
+        <div class="col-md-6 text-center">
+            <h2 id="nombreUnidadTitle" class="text-primary mb-4 fw-bold"></h2>
+            <div class="d-grid gap-3 col-md-8 mx-auto">
+                <button class="btn btn-outline-primary btn-lg py-3" onclick="showLoginProfesor()">SOY PROFESOR</button>
+                <button class="btn btn-outline-warning btn-lg py-3" onclick="showLoginAdministrativo()">SOY ADMINISTRATIVO</button>
+                <button class="btn btn-outline-success btn-lg py-3" onclick="showLoginTutor()">SOY PADRE DE FAMILIA (TUTOR)</button>
+                <button class="btn btn-link text-muted mt-2" onclick="cerrarSesionUnidad()">Volver al inicio</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view_login_profesor" class="row justify-content-center" style="display:none;"><div class="col-md-5"><div class="card shadow-sm"><div class="card-body p-5">
+        <h3 class="text-center text-primary mb-4 fw-bold">Acceso Profesor</h3>
+        <div class="mb-3"><label class="form-label">Nombre</label><input type="text" id="profNombre" class="form-control form-control-lg"></div>
+        <div class="mb-3"><label class="form-label">Código (Nro. Documento)</label><input type="text" id="profCodigo" class="form-control form-control-lg"></div>
+        <div class="d-grid gap-2"><button class="btn btn-primary btn-lg" onclick="loginProfesor()">Ingresar</button><button class="btn btn-link text-muted" onclick="volverMenuRoles()">Volver</button></div>
+    </div></div></div></div>
+
+    <div id="view_login_administrativo" class="row justify-content-center" style="display:none;"><div class="col-md-5"><div class="card shadow-sm"><div class="card-body p-5">
+        <h3 class="text-center text-warning mb-4 fw-bold">Acceso Administrativo</h3>
+        <div class="mb-3"><label class="form-label">Nombre</label><input type="text" id="adminNom" class="form-control form-control-lg"></div>
+        <div class="mb-3"><label class="form-label">Código</label><input type="text" id="adminCod" class="form-control form-control-lg"></div>
+        <div class="d-grid gap-2"><button class="btn btn-warning btn-lg" onclick="loginAdministrativo()">Ingresar</button><button class="btn btn-link text-muted" onclick="volverMenuRoles()">Volver</button></div>
+    </div></div></div></div>
+
+    <div id="view_login_tutor" class="row justify-content-center" style="display:none;"><div class="col-md-5"><div class="card shadow-sm"><div class="card-body p-5">
+        <h3 class="text-center text-success mb-4 fw-bold">Acceso Padre de Familia</h3>
+        <div class="mb-3"><label class="form-label">Teléfono del Tutor</label><input type="text" id="tutorTel" class="form-control form-control-lg"></div>
+        <div class="mb-3"><label class="form-label">Documento del Alumno</label><input type="text" id="tutorDocAlumno" class="form-control form-control-lg"></div>
+        <div class="d-grid gap-2"><button class="btn btn-success btn-lg" onclick="loginTutor()">Ingresar</button><button class="btn btn-link text-muted" onclick="volverMenuRoles()">Volver</button></div>
+    </div></div></div></div>
+
+    <!-- PANEL ADMINISTRATIVO -->
+    <div id="view_panel_administrativo" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="text-warning mb-0">Panel Administrativo: <span id="adminActualNombre"></span></h3>
+            <button class="btn btn-sm btn-outline-danger" onclick="cerrarSesionCompleta()">Cerrar Sesión</button>
+        </div>
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab_admin_cursos" onclick="renderCursosPanel()">1. Cursos y Alumnos</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab_admin_asignaciones" onclick="renderAsignaciones()">2. Asignaciones</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab_admin_profesores" onclick="renderProfesores()">3. Profesores</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab_admin_informes" onclick="updateReportSelects('_adm')">4. Informes y PDF</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab_admin_cursos">
+                 <div class="row g-4">
+                    <div class="col-md-4 mb-3"><div class="card p-4 h-100">
+                        <h5 class="mb-3 text-primary">Crear/Editar Curso</h5>
+                        <input type="hidden" id="cursoIdEdit">
+                        <input type="text" id="cursoNombre" class="form-control mb-2" placeholder="Nombre del curso (Ej: 2A)">
+                        <input type="text" id="cursoLinkAlumnos" class="form-control mb-2" placeholder="Link Grupo Alumnos (Opcional)">
+                        <input type="text" id="cursoLinkPapas" class="form-control mb-2" placeholder="Link Grupo Papás (Opcional)">
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-sm btn-primary flex-grow-1" id="btnCrearCurso" onclick="crearCurso()">Crear</button>
+                            <button class="btn btn-sm btn-warning flex-grow-1" id="btnUpdateCurso" style="display:none;" onclick="guardarEdicionCurso()">Actualizar</button>
+                            <button class="btn btn-sm btn-secondary" id="btnCancelarCurso" style="display:none;" onclick="cancelarEdicion('Curso')">X</button>
+                        </div>
+                        <hr class="my-4"><h6 class="text-muted">Cursos Existentes</h6><ul id="listaCursos" class="list-group small"></ul>
+                    </div></div>
+                    <div class="col-md-4 mb-3"><div class="card p-4 h-100">
+                        <h5 class="mb-3 text-primary">Crear/Editar Materia</h5>
+                        <input type="hidden" id="materiaIdEdit">
+                        <input type="text" id="materiaNombre" class="form-control mb-2" placeholder="Nombre materia (Ej: MATEMATICAS)">
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-sm btn-primary flex-grow-1" id="btnCrearMateria" onclick="crearMateria()">Crear</button>
+                            <button class="btn btn-sm btn-warning flex-grow-1" id="btnUpdateMateria" style="display:none;" onclick="guardarEdicionMateria()">Actualizar</button>
+                            <button class="btn btn-sm btn-secondary" id="btnCancelarMateria" style="display:none;" onclick="cancelarEdicion('Materia')">X</button>
+                        </div>
+                        <hr class="my-4"><h6 class="text-muted">Materias Existentes</h6><ul id="listaMaterias" class="list-group small"></ul>
+                    </div></div>
+                    <div class="col-md-4 mb-3"><div class="card p-4 h-100">
+                        <h5 class="mb-3 text-success">Añadir/Editar Alumno</h5>
+                        <input type="hidden" id="alumnoIdEdit">
+                        <select id="alumnoCurso" class="form-select mb-2"></select>
+                        <input type="text" id="alumnoNombre" class="form-control mb-2" placeholder="Nombre">
+                        <input type="text" id="alumnoApellido" class="form-control mb-2" placeholder="Apellido">
+                        <input type="text" id="alumnoDoc" class="form-control mb-2" placeholder="Documento">
+                        <input type="text" id="alumnoTutor" class="form-control mb-2" placeholder="Nombre Tutor">
+                        <input type="text" id="alumnoTelTutor" class="form-control mb-2" placeholder="Teléfono Tutor">
+                        <input type="text" id="alumnoTel" class="form-control mb-2" placeholder="Teléfono Alumno">
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-sm btn-success flex-grow-1" id="btnCrearAlumno" onclick="crearAlumno()">Guardar</button>
+                            <button class="btn btn-sm btn-warning flex-grow-1" id="btnUpdateAlumno" style="display:none;" onclick="guardarEdicionAlumno()">Actualizar</button>
+                            <button class="btn btn-sm btn-secondary" id="btnCancelarAlumno" style="display:none;" onclick="cancelarEdicion('Alumno')">X</button>
+                        </div>
+                        <hr class="my-4"><h6 class="text-muted">Carga Masiva (Multi-hoja)</h6>
+                        <input type="file" id="excelAlumnos" accept=".xlsx,.xls" class="form-control form-control-sm" onchange="cargarAlumnosExcel()">
+                    </div></div>
+                </div>
+                <div class="card p-4 mt-3 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Lista de Alumnos</h5>
+                        <select id="filtroCursoAlumnos" class="form-select w-auto" onchange="renderAlumnos()"></select>
+                    </div>
+                    <div class="table-container">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead><tr><th>Apellido, Nombre</th><th>Documento</th><th>Tel. Alumno</th><th>Tutor</th><th>Tel. Tutor</th><th>Acciones</th></tr></thead>
+                            <tbody id="bodyAlumnos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tab_admin_asignaciones">
+                <div class="card p-4 shadow-sm">
+                    <h5 class="mb-3 text-primary">Crear Asignación Docente</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4"><select id="asigProfesor" class="form-select"></select></div>
+                        <div class="col-md-4"><select id="asigCurso" class="form-select"></select></div>
+                        <div class="col-md-4"><select id="asigMateria" class="form-select"></select></div>
+                    </div>
+                    <button class="btn btn-primary mt-3" onclick="crearAsignacion()">Crear Asignación</button>
+                </div>
+                <div class="card p-4 mt-3 shadow-sm">
+                    <div class="row mb-3 g-3">
+                        <div class="col-md-6"><label class="form-label fw-bold">Filtrar por Profesor</label><select id="filtroAsigProfesor" class="form-select" onchange="renderAsignaciones()"></select></div>
+                        <div class="col-md-6"><label class="form-label fw-bold">Filtrar por Curso</label><select id="filtroAsigCurso" class="form-select" onchange="renderAsignaciones()"></select></div>
+                    </div>
+                    <h5 class="mb-3">Asignaciones Actuales</h5>
+                    <div class="table-container">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead><tr><th>Profesor</th><th>Curso</th><th>Materia</th><th>Acciones</th></tr></thead>
+                            <tbody id="bodyAsignaciones"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tab_admin_profesores">
+                <div class="card p-4 shadow-sm h-100">
+                    <h5 class="mb-3 text-primary">Gestión de Profesores (Solo de tu Unidad)</h5>
+                    <input type="hidden" id="profIdEdit">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6"><input type="text" id="profNom" class="form-control" placeholder="Nombre Profesor"></div>
+                        <div class="col-md-4"><input type="text" id="profCod" class="form-control" placeholder="Codigo (Doc)"></div>
+                        <div class="col-md-2 d-grid"><button class="btn btn-success" id="btnCrearProf" onclick="crearProfesorAdmin()">+</button></div>
+                        <div class="col-md-2 d-grid"><button class="btn btn-warning" id="btnUpdateProf" style="display:none;" onclick="guardarEdicionProfesor()">✓</button></div>
+                    </div>
+                    <button class="btn btn-sm btn-secondary mb-3" id="btnCancelarProf" style="display:none;" onclick="cancelarEdicion('Prof')">Cancelar</button>
+                    <input type="file" id="excelProfesores" accept=".xlsx,.xls" class="form-control form-control-sm mb-3" onchange="cargarExcel('excelProfesores')">
+                    <ul id="listaProfesores" class="list-group small"></ul>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tab_admin_informes">
+                <div class="card p-5 shadow-sm">
+                    <h5 class="mb-4 text-primary">Generador de Informes PDF</h5>
+                    <ul class="nav nav-pills mb-3">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#rep_general_adm">Informe General</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#rep_riesgo_adm">Informe de En Riesgo</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="rep_general_adm">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3"><label class="form-label fw-bold">Curso</label><select id="repCurso_adm" class="form-select" onchange="updateReportSelects('_adm')"></select></div>
+                                <div class="col-md-3"><label class="form-label fw-bold">Materia</label><select id="repMateria_adm" class="form-select"></select></div>
+                                <div class="col-md-3"><label class="form-label fw-bold">Tipo</label><select id="repTipo_adm" class="form-select"><option value="Todos">Todos</option><option value="Observaciones">Observaciones</option><option value="Actividades">Actividades</option></select></div>
+                                <div class="col-md-3"><label class="form-label fw-bold">Alumno</label><select id="repAlumno_adm" class="form-select"></select></div>
+                            </div>
+                            <button class="btn btn-danger btn-lg" onclick="generarPDF('_adm')">Generar e Imprimir PDF</button>
+                        </div>
+                        <div class="tab-pane fade" id="rep_riesgo_adm">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6"><label class="form-label fw-bold">Curso</label><select id="repRiesgoCurso_adm" class="form-select"></select></div>
+                                <div class="col-md-6"><label class="form-label fw-bold">Ciclo/Periodo</label><select id="repRiesgoPeriodo_adm" class="form-select"><option value="1ER CICLO">1ER CICLO</option><option value="2DO CICLO">2DO CICLO</option><option value="3ER CICLO">3ER CICLO</option><option value="4TO CICLO">4TO CICLO</option></select></div>
+                            </div>
+                            <button class="btn btn-danger btn-lg" onclick="generarPDFRiesgo('_adm')">Generar PDF de En Riesgo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL PROFESOR -->
+    <div id="view_panel_profesor" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="text-primary mb-0">Panel de: <span id="profActualNombre"></span></h3>
+            <button class="btn btn-sm btn-outline-danger" onclick="cerrarSesionCompleta()">Cerrar Sesión</button>
+        </div>
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab_actividades" onclick="initPanelProfesor(); renderActividades()">1. Actividades</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab_observaciones" onclick="renderObservaciones()">2. Observaciones</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab_riesgo" onclick="renderRiesgo()">3. Riesgo de Reprobación</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab_informes" onclick="updateReportSelects()">4. Informes y PDF</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab_actividades">
+                <div class="card p-4 shadow-sm mb-3">
+                    <h5 class="mb-3 text-primary">Asignar Actividad</h5>
+                    <div class="row g-3">
+                        <div class="col-md-3"><select id="actCurso" class="form-select" onchange="updateMateriasProfesor('actCurso', 'actMateria', true); renderActividades()"></select></div>
+                        <div class="col-md-3"><select id="actMateria" class="form-select" onchange="renderActividades()"></select></div>
+                        <div class="col-md-2"><select id="actTipo" class="form-select" onchange="toggleFechas()"><option value="En Clase">En Clase</option><option value="Tarea">Tarea</option></select></div>
+                        <div class="col-md-2" id="divFechaAsignacion" style="display:none;"><input type="date" id="actFechaAsignacion" class="form-control" placeholder="Asignación"></div>
+                        <div class="col-md-2" id="divFechaEntrega" style="display:none;"><input type="date" id="actFechaEntrega" class="form-control" placeholder="Entrega"></div>
+                    </div>
+                    <textarea id="actDetalle" class="form-control mt-3" placeholder="Detalle de la tarea/actividad" rows="3"></textarea>
+                    <button class="btn btn-primary mt-3" onclick="registrarActividad()">Registrar y Enviar</button>
+                </div>
+                <div class="card p-4 shadow-sm">
+                    <h5 class="mb-3">Historial de Actividades (Solo las mías)</h5>
+                    <div class="table-container">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead><tr><th>Fecha</th><th>Tipo</th><th>Materia</th><th>Detalle</th><th>Entrega</th><th>Acciones</th></tr></thead>
+                            <tbody id="bodyHistorialAct"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tab_observaciones">
+                <div class="card p-4 shadow-sm">
+                    <div class="row mb-3 g-3 align-items-end">
+                        <div class="col-md-3"><label class="form-label fw-bold">Curso</label><select id="obsCurso" class="form-select" onchange="updateMateriasProfesor('obsCurso', 'obsMateria', true); renderObservacionesAlumnos();"></select></div>
+                        <div class="col-md-3"><label class="form-label fw-bold">Materia</label><select id="obsMateria" class="form-select" onchange="renderObservacionesAlumnos();"></select></div>
+                        <div class="col-md-3"><label class="form-label fw-bold">Fecha</label><input type="date" id="obsFecha" class="form-control" onchange="renderObservacionesAlumnos();"></div>
+                    </div>
+                    <div class="table-container mb-3">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead><tr><th>Alumno</th><th class="text-center">Faltó</th><th class="text-center">Retraso</th><th class="text-center">Sin Tarea</th><th>Observación</th></tr></thead>
+                            <tbody id="bodyObsAlumnos"></tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-primary" onclick="guardarObservaciones()">Guardar Observaciones</button>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tab_riesgo">
+                <div class="card p-4 shadow-sm">
+                    <div class="row mb-3 g-3 align-items-end">
+                        <div class="col-md-3"><label class="form-label fw-bold">Curso</label><select id="riesgoCurso" class="form-select" onchange="updateMateriasProfesor('riesgoCurso', 'riesgoMateria', false); renderRiesgoAlumnos();"></select></div>
+                        <div class="col-md-3"><label class="form-label fw-bold">Materia</label><select id="riesgoMateria" class="form-select" onchange="renderRiesgoAlumnos();"></select></div>
+                        <div class="col-md-3"><label class="form-label fw-bold">Periodo</label><select id="riesgoPeriodo" class="form-select" onchange="renderRiesgoAlumnos();"><option value="1ER CICLO">1ER CICLO</option><option value="2DO CICLO">2DO CICLO</option><option value="3ER CICLO">3ER CICLO</option><option value="4TO CICLO">4TO CICLO</option></select></div>
+                    </div>
+                    <div class="table-container mb-3">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead><tr><th>Alumno</th><th class="text-center">En Riesgo</th><th>Observación</th></tr></thead>
+                            <tbody id="bodyRiesgoAlumnos"></tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-danger" onclick="guardarRiesgo()">Guardar Riesgos</button>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tab_informes">
+                <div class="card p-5 shadow-sm">
+                    <h5 class="mb-4 text-primary">Generador de Informes PDF</h5>
+                    <ul class="nav nav-pills mb-3">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#rep_general">Informe General</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#rep_riesgo">Informe de En Riesgo</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="rep_general">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3"><label class="form-label fw-bold">Curso</label><select id="repCurso" class="form-select" onchange="updateReportSelects()"></select></div>
+                                <div class="col-md-3"><label class="form-label fw-bold">Materia</label><select id="repMateria" class="form-select"></select></div>
+                                <div class="col-md-3"><label class="form-label fw-bold">Tipo</label><select id="repTipo" class="form-select"><option value="Todos">Todos</option><option value="Observaciones">Observaciones</option><option value="Actividades">Actividades</option></select></div>
+                                <div class="col-md-3"><label class="form-label fw-bold">Alumno</label><select id="repAlumno" class="form-select"></select></div>
+                            </div>
+                            <button class="btn btn-danger btn-lg" onclick="generarPDF()">Generar e Imprimir PDF</button>
+                        </div>
+                        <div class="tab-pane fade" id="rep_riesgo">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6"><label class="form-label fw-bold">Curso</label><select id="repRiesgoCurso" class="form-select"></select></div>
+                                <div class="col-md-6"><label class="form-label fw-bold">Ciclo/Periodo</label><select id="repRiesgoPeriodo" class="form-select"><option value="1ER CICLO">1ER CICLO</option><option value="2DO CICLO">2DO CICLO</option><option value="3ER CICLO">3ER CICLO</option><option value="4TO CICLO">4TO CICLO</option></select></div>
+                            </div>
+                            <button class="btn btn-danger btn-lg" onclick="generarPDFRiesgo()">Generar PDF de En Riesgo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view_panel_tutor" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="text-success mb-0">Panel Tutor: <span id="tutorAlumnoNombre"></span></h3>
+            <button class="btn btn-sm btn-outline-danger" onclick="cerrarSesionCompleta()">Cerrar Sesión</button>
+        </div>
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab_tutor_act" onclick="renderTutorActividades()">Actividades</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab_tutor_obs" onclick="renderTutorObservaciones()">Observaciones</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab_tutor_act"><div class="card p-4 shadow-sm"><h5 class="mb-3">Historial de Actividades</h5>
+                <div class="table-container"><table class="table table-hover table-sm align-middle"><thead><tr><th>Fecha</th><th>Materia</th><th>Tipo</th><th>Detalle</th><th>Entrega</th><th>Estado</th></tr></thead><tbody id="bodyTutorAct"></tbody></table></div>
+            </div></div>
+            <div class="tab-pane fade" id="tab_tutor_obs"><div class="card p-4 shadow-sm"><h5 class="mb-3">Historial de Observaciones</h5>
+                <div class="table-container"><table class="table table-hover table-sm align-middle"><thead><tr><th>Fecha</th><th>Materia</th><th>Detalles</th></tr></thead><tbody id="bodyTutorObs"></tbody></table></div>
+            </div></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="adminLoginModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header bg-dark text-white"><h5 class="modal-title">Acceso Coordinador</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body p-4">
+        <div class="mb-3"><label>Usuario</label><input type="text" id="adminUser" class="form-control form-control-lg"></div>
+        <div class="mb-3"><label>Contraseña</label><input type="password" id="adminPass" class="form-control form-control-lg"></div>
+        <button class="btn btn-dark btn-lg w-100" onclick="loginAdmin()">Entrar</button>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="editActModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header bg-primary text-white"><h5 class="modal-title">Editar Actividad</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body p-4">
+        <input type="hidden" id="editActId">
+        <div class="mb-3"><label class="form-label">Detalle</label><textarea id="edit_actDetalle" class="form-control" rows="3"></textarea></div>
+        <div class="mb-3"><label class="form-label">Fecha Entrega</label><input type="date" id="edit_actFechaEnt" class="form-control"></div>
+        <button class="btn btn-primary w-100" onclick="guardarEdicionActividad()">Guardar Cambios</button>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="editAsigModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header bg-warning"><h5 class="modal-title">Editar Asignación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body p-4">
+        <input type="hidden" id="editAsigId">
+        <div class="mb-3"><label class="form-label">Profesor</label><select id="edit_asigProfesor" class="form-select"></select></div>
+        <div class="mb-3"><label class="form-label">Curso</label><select id="edit_asigCurso" class="form-select"></select></div>
+        <div class="mb-3"><label class="form-label">Materia</label><select id="edit_asigMateria" class="form-select"></select></div>
+        <button class="btn btn-warning w-100" onclick="guardarEdicionAsignacion()">Guardar Cambios</button>
+    </div>
+</div></div></div>
+
+<!-- PANEL COORDINADOR -->
+<div id="view_admin_panel" class="container-fluid px-4" style="display:none;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <h3 class="text-dark mb-0">Panel del Coordinador General</h3>
+            <button class="btn btn-sm btn-danger py-0 px-2" onclick="limpiarDB()" title="Vaciar Base de Datos"><small>BD_0</small></button>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" onclick="cerrarSesionCompleta()">Cerrar Sesión</button>
+    </div>
+
+    <div class="card p-4 mb-4 border-info">
+        <h5 class="text-info">Gestión de Backups</h5>
+        <div class="row g-3">
+            <div class="col-md-6"><button class="btn btn-outline-primary w-100" onclick="exportarDB()">⬇️ Descargar Backup</button></div>
+            <div class="col-md-6"><input type="file" id="importDB" accept=".json" class="form-control" onchange="importarDB(event)"></div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6"><div class="card p-4 shadow-sm h-100">
+            <h5 class="mb-3 text-primary">Gestión de Colegios</h5>
+            <input type="hidden" id="colIdEdit">
+            <div class="row g-2 mb-3">
+                <div class="col-md-6"><input type="text" id="colNombre" class="form-control" placeholder="Nombre Colegio"></div>
+                <div class="col-md-4"><input type="text" id="colCodigo" class="form-control" placeholder="Codigo"></div>
+                <div class="col-md-2 d-grid"><button class="btn btn-primary" id="btnCrearCol" onclick="crearColegio()">+</button></div>
+                <div class="col-md-2 d-grid"><button class="btn btn-warning" id="btnUpdateCol" style="display:none;" onclick="guardarEdicionColegio()">✓</button></div>
+            </div>
+            <button class="btn btn-sm btn-secondary mb-3" id="btnCancelarCol" style="display:none;" onclick="cancelarEdicion('Col')">Cancelar</button>
+            <input type="file" id="excelColegios" accept=".xlsx,.xls" class="form-control form-control-sm mb-3" onchange="cargarExcel('excelColegios')">
+            <ul id="listaColegios" class="list-group small"></ul>
+        </div></div>
+        <div class="col-md-6"><div class="card p-4 shadow-sm h-100">
+            <h5 class="mb-3 text-warning">Gestión de Administrativos</h5>
+            <input type="hidden" id="adminIdEdit">
+            <select id="adminColegioFiltro" class="form-select mb-3" onchange="renderAdmins()"></select>
+            <div class="row g-2 mb-3">
+                <div class="col-md-6"><input type="text" id="adminNomReg" class="form-control" placeholder="Nombre Admin"></div>
+                <div class="col-md-4"><input type="text" id="adminCodReg" class="form-control" placeholder="Codigo"></div>
+                <div class="col-md-2 d-grid"><button class="btn btn-warning" id="btnCrearAdmin" onclick="crearAdmin()">+</button></div>
+                <div class="col-md-2 d-grid"><button class="btn btn-success" id="btnUpdateAdmin" style="display:none;" onclick="guardarEdicionAdmin()">✓</button></div>
+            </div>
+            <button class="btn btn-sm btn-secondary mb-3" id="btnCancelarAdmin" style="display:none;" onclick="cancelarEdicion('Admin')">Cancelar</button>
+            <ul id="listaAdmins" class="list-group small"></ul>
+        </div></div>
+    </div>
+</div>
+
+<script>
+let db = { colegios: [], profesores: [], administrativos: [], cursos: [], materias: [], alumnos: [], actividades: [], observaciones: [], riesgo_reprobacion: [], asignaciones: [] };
+let state = { currentColegioId: null, currentProfesorId: null, currentTutorAlumnoId: null, currentAdminId: null };
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
+function sortAlumnos(arr) { 
+    return arr.sort((a, b) => {
+        let apA = a.apellido || ""; let apB = b.apellido || "";
+        let nmA = a.nombre || ""; let nmB = b.nombre || "";
+        return apA.localeCompare(apB) || nmA.localeCompare(nmB);
+    });
+}
+function getColegioName() {
+    let col = db.colegios.find(c => c.id === state.currentColegioId);
+    return col ? col.nombre : '';
+}
+
+function getLocalDate() {
+    let d = new Date();
+    let year = d.getFullYear();
+    let month = String(d.getMonth() + 1).padStart(2, '0');
+    let day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+function formatDateSafe(dateStr) {
+    if (!dateStr) return '';
+    if (dateStr instanceof Date) {
+        let y = dateStr.getFullYear();
+        let m = String(dateStr.getMonth() + 1).padStart(2, '0');
+        let d = String(dateStr.getDate()).padStart(2, '0');
+        return `${d}/${m}/${y}`;
+    }
+    let parts = String(dateStr).split('T')[0].split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return String(dateStr);
+}
+
+async function fetchDB() {
+    try {
+        const safeJson = async (url) => {
+            try {
+                const r = await fetch(url);
+                if (!r.ok) return [];
+                const data = await r.json();
+                return Array.isArray(data) ? data : [];
+            } catch(e) { return []; }
+        };
+        db.colegios = await safeJson('/api/colegios');
+        db.profesores = await safeJson('/api/profesores');
+        db.administrativos = await safeJson('/api/administrativos');
+        db.cursos = await safeJson('/api/cursos');
+        db.materias = await safeJson('/api/materias');
+        db.alumnos = await safeJson('/api/alumnos');
+        db.actividades = await safeJson('/api/actividades');
+        db.observaciones = await safeJson('/api/observaciones');
+        db.riesgo_reprobacion = await safeJson('/api/riesgo_reprobacion');
+        db.asignaciones = await safeJson('/api/asignaciones');
+    } catch(e) { console.error("Error cargando DB:", e); }
+}
+async function apiPost(table, data) { await fetch(`/api/${table}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); }
+async function apiPut(table, id, data) { await fetch(`/api/${table}/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); }
+async function apiDelete(table, id) { await fetch(`/api/${table}/${id}`, { method: 'DELETE' }); }
+
+function showView(id) {
+    let views = ['view_acceso', 'view_roles', 'view_login_profesor', 'view_login_administrativo', 'view_login_tutor', 'view_panel_profesor', 'view_panel_administrativo', 'view_panel_tutor', 'view_admin_panel'];
+    views.forEach(v => document.getElementById(v).style.display = 'none');
+    document.getElementById(id).style.display = 'block';
+}
+
+function ingresarUnidad() {
+    let cod = document.getElementById('codigoUnidad').value.trim();
+    let col = db.colegios.find(c => String(c.codigo).trim() === cod);
+    document.getElementById('codigoUnidad').value = ''; 
+    if (col) { state.currentColegioId = col.id; document.getElementById('nombreUnidadTitle').innerText = "Unidad Educativa: " + col.nombre; showView('view_roles'); } 
+    else { alert("Código incorrecto."); }
+}
+function showLoginProfesor() { showView('view_login_profesor'); }
+function showLoginAdministrativo() { showView('view_login_administrativo'); }
+function showLoginTutor() { showView('view_login_tutor'); }
+function volverMenuRoles() { showView('view_roles'); }
+function cerrarSesionUnidad() { state.currentColegioId = null; showView('view_acceso'); }
+function cerrarSesionCompleta() { state = { currentColegioId: null, currentProfesorId: null, currentTutorAlumnoId: null, currentAdminId: null }; showView('view_acceso'); }
+
+// CORRECCIÓN: Login de profesor recarga DB y limpia paneles
+async function loginProfesor() {
+    let nom = document.getElementById('profNombre').value.trim();
+    let cod = document.getElementById('profCodigo').value.trim();
+    let prof = db.profesores.find(p => p.nombre.toLowerCase() === nom.toLowerCase() && String(p.codigo).trim() === cod && p.colegioId === state.currentColegioId);
+    document.getElementById('profNombre').value = ''; document.getElementById('profCodigo').value = '';
+    if (prof) { 
+        state.currentProfesorId = prof.id; 
+        document.getElementById('profActualNombre').innerText = `${prof.nombre} - ${getColegioName()}`; 
+        showView('view_panel_profesor');
+        await fetchDB(); // Refrescar datos por si cambió
+        initPanelProfesor(); 
+    } else { alert("Datos incorrectos."); }
+}
+function loginAdministrativo() {
+    let nom = document.getElementById('adminNom').value.trim();
+    let cod = document.getElementById('adminCod').value.trim();
+    let admin = db.administrativos.find(a => a.nombre.toLowerCase() === nom.toLowerCase() && String(a.codigo).trim() === cod && a.colegioId === state.currentColegioId);
+    document.getElementById('adminNom').value = ''; document.getElementById('adminCod').value = '';
+    if (admin) { 
+        state.currentAdminId = admin.id; 
+        document.getElementById('adminActualNombre').innerText = `${admin.nombre} - ${getColegioName()}`; 
+        showView('view_panel_administrativo'); initPanelAdministrativo(); 
+    } else { alert("Datos incorrectos."); }
+}
+function loginTutor() {
+    let tel = document.getElementById('tutorTel').value.trim();
+    let doc = document.getElementById('tutorDocAlumno').value.trim();
+    let al = db.alumnos.find(a => String(a.telTutor).trim() === tel && String(a.documento).trim() === doc && a.colegioId === state.currentColegioId);
+    document.getElementById('tutorTel').value = ''; document.getElementById('tutorDocAlumno').value = '';
+    if (al) { 
+        state.currentTutorAlumnoId = al.id; 
+        document.getElementById('tutorAlumnoNombre').innerText = `${al.nombre} ${al.apellido} - ${getColegioName()}`; 
+        showView('view_panel_tutor'); renderTutorActividades(); renderTutorObservaciones(); 
+    } else { alert("Datos incorrectos."); }
+}
+
+function showAdminLogin() { 
+    let myModal = new bootstrap.Modal(document.getElementById('adminLoginModal'));
+    myModal.show(); 
+}
+function loginAdmin() {
+    let u = document.getElementById('adminUser').value.trim(); 
+    let p = document.getElementById('adminPass').value.trim();
+    document.getElementById('adminUser').value = ''; 
+    document.getElementById('adminPass').value = '';
+    if (u === "COORDINADOR" && p === "486259632147") {
+        let myModalEl = document.getElementById('adminLoginModal');
+        let modal = bootstrap.Modal.getInstance(myModalEl) || new bootstrap.Modal(myModalEl);
+        modal.hide();
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        showView('view_admin_panel'); renderColegios(); renderFiltroAdmins(); renderAdmins(); 
+    } else { alert("Credenciales incorrectas."); }
+}
+
+async function limpiarDB() {
+    if(confirm("¿ESTÁS ABSOLUTAMENTE SEGURO? Esto borrará TODOS los datos de forma permanente.")) {
+        try { await fetch('/api/clean-db', { method: 'POST' }); await fetchDB(); renderColegios(); renderFiltroAdmins(); renderAdmins(); alert("Base de datos limpiada con éxito."); } 
+        catch(e) { alert("Error al limpiar la base de datos."); }
+    }
+}
+async function exportarDB() { 
+    try {
+        const res = await fetch('/api/backup');
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'backup_sistema.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } catch (e) { alert("Error al exportar."); }
+}
+async function importarDB(event) {
+    let file = event.target.files[0]; if(!file) return;
+    let reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            let backup = JSON.parse(e.target.result);
+            await fetch('/api/restore', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(backup) });
+            await fetchDB(); renderColegios(); renderFiltroAdmins(); renderAdmins();
+            alert("Backup restaurado con éxito.");
+        } catch(err) { alert("Error al restaurar el backup."); }
+    }; reader.readAsText(file);
+}
+
+// --- CRUD COLEGIOS ---
+async function crearColegio() { 
+    let n = document.getElementById('colNombre').value; let c = String(document.getElementById('colCodigo').value); 
+    if(!n||!c) return; 
+    let o = {id: uid(), nombre: n, codigo: c}; 
+    await apiPost('colegios', o); await fetchDB(); renderColegios(); renderFiltroAdmins(); 
+    document.getElementById('colNombre').value=''; document.getElementById('colCodigo').value=''; 
+}
+function editarColegio(id) { 
+    let c = db.colegios.find(x => x.id === id); 
+    document.getElementById('colIdEdit').value = id; document.getElementById('colNombre').value = c.nombre; document.getElementById('colCodigo').value = c.codigo; 
+    document.getElementById('btnCrearCol').style.display = 'none'; document.getElementById('btnUpdateCol').style.display = 'block'; document.getElementById('btnCancelarCol').style.display = 'inline-block'; 
+}
+async function guardarEdicionColegio() { 
+    let id = document.getElementById('colIdEdit').value; let c = db.colegios.find(x => x.id === id); 
+    c.nombre = document.getElementById('colNombre').value; c.codigo = String(document.getElementById('colCodigo').value); 
+    await apiPut('colegios', id, c); await fetchDB(); renderColegios(); renderFiltroAdmins(); cancelarEdicion('Col'); 
+}
+function renderColegios() { 
+    let ul = document.getElementById('listaColegios'); ul.innerHTML = ''; 
+    db.colegios.forEach(c => ul.innerHTML += `<li class="list-group-item d-flex justify-content-between">${c.nombre} (${c.codigo}) <div><button class="btn btn-sm btn-warning" onclick="editarColegio('${c.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarColegio('${c.id}')">X</button></div></li>`); 
+}
+async function eliminarColegio(id) { 
+    if(confirm("Eliminar colegio y datos asociados?")) { 
+        await apiDelete('colegios', id); await fetchDB(); renderColegios(); renderFiltroAdmins(); renderAdmins(); 
+    } 
+}
+
+// --- CRUD PROFESORES ---
+async function crearProfesorAdmin() { 
+    let n = document.getElementById('profNom').value; let c = String(document.getElementById('profCod').value); 
+    if(!n||!c) return; 
+    let o = {id: uid(), colegioId: state.currentColegioId, nombre: n, codigo: c}; 
+    await apiPost('profesores', o); await fetchDB(); renderProfesores(); updateAdminSelects(); 
+    document.getElementById('profNom').value = ''; document.getElementById('profCod').value = ''; 
+}
+function editarProfesor(id) { 
+    let p = db.profesores.find(x => x.id === id); 
+    document.getElementById('profIdEdit').value = id; document.getElementById('profNom').value = p.nombre; document.getElementById('profCod').value = p.codigo; 
+    document.getElementById('btnCrearProf').style.display = 'none'; document.getElementById('btnUpdateProf').style.display = 'block'; document.getElementById('btnCancelarProf').style.display = 'inline-block'; 
+}
+async function guardarEdicionProfesor() { 
+    let id = document.getElementById('profIdEdit').value; let p = db.profesores.find(x => x.id === id); 
+    p.nombre = document.getElementById('profNom').value; p.codigo = String(document.getElementById('profCod').value); 
+    await apiPut('profesores', id, p); await fetchDB(); renderProfesores(); updateAdminSelects(); cancelarEdicion('Prof'); 
+}
+function renderProfesores() { 
+    let ul = document.getElementById('listaProfesores'); ul.innerHTML = ''; 
+    db.profesores.filter(p => p.colegioId === state.currentColegioId).forEach(p => { 
+        ul.innerHTML += `<li class="list-group-item d-flex justify-content-between">${p.nombre} - ${p.codigo} <div><button class="btn btn-sm btn-warning" onclick="editarProfesor('${p.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarProfesor('${p.id}')">X</button></div></li>`; 
+    }); 
+}
+async function eliminarProfesor(id) { 
+    await apiDelete('profesores', id); await fetchDB(); renderProfesores(); updateAdminSelects(); renderAsignaciones(); 
+}
+
+// --- CRUD ADMINISTRATIVOS ---
+function renderFiltroAdmins() { 
+    let s = document.getElementById('adminColegioFiltro'); s.innerHTML = '<option value="Todos">Todos</option>'; 
+    db.colegios.forEach(c => s.innerHTML += `<option value="${c.id}">${c.nombre}</option>`); 
+}
+async function crearAdmin() { 
+    let n = document.getElementById('adminNomReg').value; let c = String(document.getElementById('adminCodReg').value); let col = document.getElementById('adminColegioFiltro').value; 
+    if(col === "Todos") return alert("Seleccione colegio"); if(!n||!c) return; 
+    let o = {id: uid(), colegioId: col, nombre: n, codigo: c}; 
+    await apiPost('administrativos', o); await fetchDB(); renderAdmins(); 
+    document.getElementById('adminNomReg').value = ''; document.getElementById('adminCodReg').value = ''; 
+}
+function editarAdmin(id) { 
+    let a = db.administrativos.find(x => x.id === id); 
+    document.getElementById('adminIdEdit').value = id; document.getElementById('adminColegioFiltro').value = a.colegioId; document.getElementById('adminNomReg').value = a.nombre; document.getElementById('adminCodReg').value = a.codigo; 
+    document.getElementById('btnCrearAdmin').style.display = 'none'; document.getElementById('btnUpdateAdmin').style.display = 'block'; document.getElementById('btnCancelarAdmin').style.display = 'inline-block'; 
+}
+async function guardarEdicionAdmin() { 
+    let id = document.getElementById('adminIdEdit').value; let a = db.administrativos.find(x => x.id === id); 
+    a.colegioId = document.getElementById('adminColegioFiltro').value; a.nombre = document.getElementById('adminNomReg').value; a.codigo = String(document.getElementById('adminCodReg').value); 
+    await apiPut('administrativos', id, a); await fetchDB(); renderAdmins(); cancelarEdicion('Admin'); 
+}
+function renderAdmins() { 
+    let f = document.getElementById('adminColegioFiltro').value; let ul = document.getElementById('listaAdmins'); ul.innerHTML = ''; 
+    db.administrativos.filter(a => f === "Todos" || a.colegioId === f).forEach(a => { 
+        let c = db.colegios.find(x => x.id === a.colegioId); 
+        ul.innerHTML += `<li class="list-group-item d-flex justify-content-between">${a.nombre} - ${a.codigo} <small>(${c ? c.nombre : ''})</small> <div><button class="btn btn-sm btn-warning" onclick="editarAdmin('${a.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarAdmin('${a.id}')">X</button></div></li>`; 
+    }); 
+}
+async function eliminarAdmin(id) { await apiDelete('administrativos', id); await fetchDB(); renderAdmins(); }
+
+// --- PANEL ADMINISTRATIVO ---
+function initPanelAdministrativo() { 
+    renderCursosPanel(); renderAsignaciones(); updateAdminSelects(); renderProfesores(); 
+    let allCurs = db.cursos.filter(c => c.colegioId === state.currentColegioId);
+    document.getElementById('repCurso_adm').innerHTML = allCurs.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    document.getElementById('repRiesgoCurso_adm').innerHTML = allCurs.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    if(allCurs.length > 0) document.getElementById('repCurso_adm').value = allCurs[0].id;
+    if(allCurs.length > 0) document.getElementById('repRiesgoCurso_adm').value = allCurs[0].id;
+    updateReportSelects('_adm');
+}
+function renderCursosPanel() {
+    let curs = db.cursos.filter(c => c.colegioId === state.currentColegioId); let ul = document.getElementById('listaCursos'); ul.innerHTML = '';
+    curs.forEach(c => {
+        let links = [];
+        if(c.linkAlumnos) links.push('📱 Alumnos'); if(c.linkPapas) links.push('👨‍👩‍👧 Padres');
+        let linksHtml = links.length > 0 ? `<small class="text-success">${links.join(' | ')}</small>` : `<small class="text-danger">Sin WhatsApp</small>`;
+        ul.innerHTML += `<li class="list-group-item d-flex justify-content-between"><div>${c.nombre} <br> ${linksHtml}</div><div><button class="btn btn-sm btn-warning" onclick="editarCurso('${c.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarCurso('${c.id}')">X</button></div></li>`;
+    });
+    let mat = db.materias.filter(m => m.colegioId === state.currentColegioId); let ulm = document.getElementById('listaMaterias'); ulm.innerHTML = '';
+    mat.forEach(m => ulm.innerHTML += `<li class="list-group-item d-flex justify-content-between">${m.nombre} <div><button class="btn btn-sm btn-warning" onclick="editarMateria('${m.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarMateria('${m.id}')">X</button></div></li>`);
+    updateAdminSelects(); renderAlumnos();
+}
+function updateAdminSelects() {
+    let curs = db.cursos.filter(c => c.colegioId === state.currentColegioId);
+    let optsC = '<option value="">Seleccione Curso</option>' + curs.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    let elAlumnoCurso = document.getElementById('alumnoCurso'); if(elAlumnoCurso) elAlumnoCurso.innerHTML = optsC;
+    let elFiltroCurso = document.getElementById('filtroCursoAlumnos');
+    let firstVal = curs.length > 0 ? curs[0].id : "";
+    if(elFiltroCurso) {
+        elFiltroCurso.innerHTML = curs.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+        if(firstVal) elFiltroCurso.value = firstVal;
+    }
+    let profs = db.profesores.filter(p => p.colegioId === state.currentColegioId);
+    let optsP = profs.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+    let elAsigP = document.getElementById('asigProfesor'); if(elAsigP) elAsigP.innerHTML = optsP;
+    let elEditP = document.getElementById('edit_asigProfesor'); if(elEditP) elEditP.innerHTML = optsP;
+    let elAsigC = document.getElementById('asigCurso'); if(elAsigC) elAsigC.innerHTML = optsC; 
+    let elEditC = document.getElementById('edit_asigCurso'); if(elEditC) elEditC.innerHTML = optsC;
+    let mats = db.materias.filter(m => m.colegioId === state.currentColegioId);
+    let optsM = mats.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+    let elAsigM = document.getElementById('asigMateria'); if(elAsigM) elAsigM.innerHTML = optsM;
+    let elEditM = document.getElementById('edit_asigMateria'); if(elEditM) elEditM.innerHTML = optsM;
+    let elFiltroP = document.getElementById('filtroAsigProfesor'); 
+    if(elFiltroP) elFiltroP.innerHTML = '<option value="">Todos los Profesores</option>' + optsP;
+    let elFiltroC = document.getElementById('filtroAsigCurso'); 
+    if(elFiltroC) elFiltroC.innerHTML = '<option value="">Todos los Cursos</option>' + curs.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+}
+async function crearCurso() { 
+    let n = document.getElementById('cursoNombre').value; let lA = document.getElementById('cursoLinkAlumnos').value; let lP = document.getElementById('cursoLinkPapas').value; if(!n) return; 
+    let o = {id: uid(), colegioId: state.currentColegioId, nombre: n, linkAlumnos: lA, linkPapas: lP}; 
+    await apiPost('cursos', o); await fetchDB(); renderCursosPanel(); 
+    document.getElementById('cursoNombre').value = ''; document.getElementById('cursoLinkAlumnos').value = ''; document.getElementById('cursoLinkPapas').value = ''; 
+}
+function editarCurso(id) { 
+    let c = db.cursos.find(x => x.id === id); document.getElementById('cursoIdEdit').value = id; document.getElementById('cursoNombre').value = c.nombre; document.getElementById('cursoLinkAlumnos').value = c.linkAlumnos || ''; document.getElementById('cursoLinkPapas').value = c.linkPapas || ''; 
+    document.getElementById('btnCrearCurso').style.display = 'none'; document.getElementById('btnUpdateCurso').style.display = 'inline-block'; document.getElementById('btnCancelarCurso').style.display = 'inline-block'; 
+}
+async function guardarEdicionCurso() { 
+    let id = document.getElementById('cursoIdEdit').value; let c = db.cursos.find(x => x.id === id); 
+    c.nombre = document.getElementById('cursoNombre').value; c.linkAlumnos = document.getElementById('cursoLinkAlumnos').value; c.linkPapas = document.getElementById('cursoLinkPapas').value; 
+    await apiPut('cursos', id, c); await fetchDB(); renderCursosPanel(); cancelarEdicion('Curso'); 
+}
+async function eliminarCurso(id) { await apiDelete('cursos', id); await fetchDB(); renderCursosPanel(); }
+async function crearMateria() { 
+    let n = document.getElementById('materiaNombre').value; if(!n) return; 
+    let o = {id: uid(), colegioId: state.currentColegioId, nombre: n}; 
+    await apiPost('materias', o); await fetchDB(); renderCursosPanel(); document.getElementById('materiaNombre').value = ''; 
+}
+function editarMateria(id) { 
+    let m = db.materias.find(x => x.id === id); document.getElementById('materiaIdEdit').value = id; document.getElementById('materiaNombre').value = m.nombre; 
+    document.getElementById('btnCrearMateria').style.display = 'none'; document.getElementById('btnUpdateMateria').style.display = 'inline-block'; document.getElementById('btnCancelarMateria').style.display = 'inline-block'; 
+}
+async function guardarEdicionMateria() { 
+    let id = document.getElementById('materiaIdEdit').value; let m = db.materias.find(x => x.id === id); m.nombre = document.getElementById('materiaNombre').value; 
+    await apiPut('materias', id, m); await fetchDB(); renderCursosPanel(); cancelarEdicion('Materia'); 
+}
+async function eliminarMateria(id) { await apiDelete('materias', id); await fetchDB(); renderCursosPanel(); }
+async function crearAlumno() { 
+    let cId = document.getElementById('alumnoCurso').value; if(!cId) return; 
+    let o = {id: uid(), colegioId: state.currentColegioId, cursoId: cId, nombre: document.getElementById('alumnoNombre').value, apellido: document.getElementById('alumnoApellido').value, documento: String(document.getElementById('alumnoDoc').value), tutor: document.getElementById('alumnoTutor').value, telTutor: String(document.getElementById('alumnoTelTutor').value), telAlumno: String(document.getElementById('alumnoTel').value)}; 
+    if(!o.nombre || !o.documento) return; 
+    await apiPost('alumnos', o); await fetchDB(); renderAlumnos(); 
+    ['alumnoNombre','alumnoApellido','alumnoDoc','alumnoTutor','alumnoTelTutor','alumnoTel'].forEach(id => document.getElementById(id).value = ''); 
+}
+function editarAlumno(id) { 
+    let a = db.alumnos.find(x => x.id === id); 
+    document.getElementById('alumnoIdEdit').value = id; document.getElementById('alumnoCurso').value = a.cursoId; document.getElementById('alumnoNombre').value = a.nombre; document.getElementById('alumnoApellido').value = a.apellido; document.getElementById('alumnoDoc').value = a.documento; document.getElementById('alumnoTutor').value = a.tutor; document.getElementById('alumnoTelTutor').value = a.telTutor; document.getElementById('alumnoTel').value = a.telAlumno; 
+    document.getElementById('btnCrearAlumno').style.display = 'none'; document.getElementById('btnUpdateAlumno').style.display = 'inline-block'; document.getElementById('btnCancelarAlumno').style.display = 'inline-block'; 
+}
+async function guardarEdicionAlumno() { 
+    let id = document.getElementById('alumnoIdEdit').value; let a = db.alumnos.find(x => x.id === id); 
+    a.cursoId = document.getElementById('alumnoCurso').value; a.nombre = document.getElementById('alumnoNombre').value; a.apellido = document.getElementById('alumnoApellido').value; a.documento = String(document.getElementById('alumnoDoc').value); a.tutor = document.getElementById('alumnoTutor').value; a.telTutor = String(document.getElementById('alumnoTelTutor').value); a.telAlumno = String(document.getElementById('alumnoTel').value); 
+    await apiPut('alumnos', id, a); await fetchDB(); renderAlumnos(); cancelarEdicion('Alumno'); 
+}
+function renderAlumnos() { 
+    let cId = document.getElementById('filtroCursoAlumnos').value; if(!cId) return; 
+    let als = sortAlumnos(db.alumnos.filter(a => a.cursoId === cId)); let tb = document.getElementById('bodyAlumnos'); tb.innerHTML = ''; 
+    als.forEach(a => tb.innerHTML += `<tr><td>${a.apellido}, ${a.nombre}</td><td>${a.documento}</td><td>${a.telAlumno}</td><td>${a.tutor}</td><td>${a.telTutor}</td><td><button class="btn btn-sm btn-warning" onclick="editarAlumno('${a.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarAlumno('${a.id}')">X</button></td></tr>`); 
+}
+async function eliminarAlumno(id) { await apiDelete('alumnos', id); await fetchDB(); renderAlumnos(); }
+
+// --- ASIGNACIONES ---
+async function crearAsignacion() {
+    let p = document.getElementById('asigProfesor').value; let c = document.getElementById('asigCurso').value; let m = document.getElementById('asigMateria').value;
+    if(!p || !c || !m) return alert("Seleccione Profesor, Curso y Materia");
+    let exists = db.asignaciones.find(a => a.profesorId === p && a.cursoId === c && a.materiaId === m && a.colegioId === state.currentColegioId);
+    if(exists) return alert("Esta asignación ya existe.");
+    let o = {id: uid(), colegioId: state.currentColegioId, profesorId: p, cursoId: c, materiaId: m};
+    await apiPost('asignaciones', o); await fetchDB(); renderAsignaciones();
+}
+function editarAsignacion(id) { 
+    let a = db.asignaciones.find(x => x.id === id); 
+    document.getElementById('editAsigId').value = id; 
+    document.getElementById('edit_asigProfesor').value = a.profesorId; 
+    document.getElementById('edit_asigCurso').value = a.cursoId; 
+    document.getElementById('edit_asigMateria').value = a.materiaId; 
+    new bootstrap.Modal(document.getElementById('editAsigModal')).show(); 
+}
+async function guardarEdicionAsignacion() { 
+    let id = document.getElementById('editAsigId').value; let a = db.asignaciones.find(x => x.id === id); 
+    a.profesorId = document.getElementById('edit_asigProfesor').value; a.cursoId = document.getElementById('edit_asigCurso').value; a.materiaId = document.getElementById('edit_asigMateria').value; 
+    await apiPut('asignaciones', id, a); await fetchDB(); bootstrap.Modal.getInstance(document.getElementById('editAsigModal')).hide(); renderAsignaciones(); 
+}
+function renderAsignaciones() {
+    let fProf = document.getElementById('filtroAsigProfesor').value;
+    let fCurso = document.getElementById('filtroAsigCurso').value;
+    let tb = document.getElementById('bodyAsignaciones'); tb.innerHTML = '';
+    db.asignaciones.filter(a => a.colegioId === state.currentColegioId && (!fProf || a.profesorId === fProf) && (!fCurso || a.cursoId === fCurso)).forEach(a => {
+        let p = db.profesores.find(x => x.id === a.profesorId); let c = db.cursos.find(x => x.id === a.cursoId); let m = db.materias.find(x => x.id === a.materiaId);
+        tb.innerHTML += `<tr><td>${p ? p.nombre : ''}</td><td>${c ? c.nombre : ''}</td><td>${m ? m.nombre : ''}</td><td><button class="btn btn-sm btn-warning" onclick="editarAsignacion('${a.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarAsignacion('${a.id}')">X</button></td></tr>`;
+    });
+}
+async function eliminarAsignacion(id) { await apiDelete('asignaciones', id); await fetchDB(); renderAsignaciones(); }
+
+function cancelarEdicion(tipo) {
+    const map = { 'Col': ['colNombre','colCodigo'], 'Prof': ['profNom','profCod'], 'Admin': ['adminNomReg','adminCodReg'], 'Curso': ['cursoNombre','cursoLinkAlumnos','cursoLinkPapas'], 'Materia': ['materiaNombre'], 'Alumno': ['alumnoNombre','alumnoApellido','alumnoDoc','alumnoTutor','alumnoTelTutor','alumnoTel'] };
+    if(document.getElementById('btnCrear' + tipo)) document.getElementById('btnCrear' + tipo).style.display = 'inline-block'; 
+    if(document.getElementById('btnUpdate' + tipo)) document.getElementById('btnUpdate' + tipo).style.display = 'none'; 
+    if(document.getElementById('btnCancelar' + tipo)) document.getElementById('btnCancelar' + tipo).style.display = 'none';
+    if(map[tipo]) map[tipo].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+}
+
+// --- PANEL PROFESOR (SECCION PRIVADA) ---
+function initPanelProfesor() {
+    let myCursos = db.cursos.filter(c => db.asignaciones.some(a => a.profesorId === state.currentProfesorId && a.cursoId === c.id));
+    let optsC = '<option value="">Seleccione Curso</option>' + myCursos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    
+    document.getElementById('actCurso').innerHTML = optsC;
+    document.getElementById('obsCurso').innerHTML = optsC;
+    document.getElementById('riesgoCurso').innerHTML = optsC;
+    
+    // Forzar valores en blanco para que no cargue nada automáticamente
+    document.getElementById('actCurso').value = "";
+    document.getElementById('obsCurso').value = "";
+    document.getElementById('riesgoCurso').value = "";
+    document.getElementById('obsFecha').value = getLocalDate();
+    
+    updateMateriasProfesor('actCurso', 'actMateria', true);
+    updateMateriasProfesor('obsCurso', 'obsMateria', true);
+    updateMateriasProfesor('riesgoCurso', 'riesgoMateria', false);
+    
+    // Limpiar paneles al iniciar
+    document.getElementById('bodyHistorialAct').innerHTML = '<tr><td colspan="6" class="text-center text-muted">Seleccione curso y materia para cargar.</td></tr>';
+    document.getElementById('bodyObsAlumnos').innerHTML = '<tr><td colspan="5" class="text-center text-muted">Seleccione curso y materia para cargar.</td></tr>';
+    document.getElementById('bodyRiesgoAlumnos').innerHTML = '<tr><td colspan="3" class="text-center text-muted">Seleccione curso, materia y periodo para cargar.</td></tr>';
+
+    let allCurs = db.cursos.filter(c => c.colegioId === state.currentColegioId);
+    document.getElementById('repCurso').innerHTML = allCurs.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    document.getElementById('repRiesgoCurso').innerHTML = allCurs.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    if(allCurs.length > 0) document.getElementById('repCurso').value = allCurs[0].id;
+    if(allCurs.length > 0) document.getElementById('repRiesgoCurso').value = allCurs[0].id;
+    updateReportSelects();
+}
+function updateMateriasProfesor(cursoSelectId, materiaSelectId, includeAll) {
+    let cId = document.getElementById(cursoSelectId).value;
+    if(!cId) { document.getElementById(materiaSelectId).innerHTML = ''; return; }
+    let myMaterias = db.materias.filter(m => db.asignaciones.some(a => a.profesorId === state.currentProfesorId && a.cursoId === cId && a.materiaId === m.id));
+    let opts = includeAll ? '<option value="Todas">Todas las Materias</option>' : '<option value="">Seleccione Materia</option>';
+    document.getElementById(materiaSelectId).innerHTML = opts + myMaterias.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+}
+
+function toggleFechas() { let tipo = document.getElementById('actTipo').value; document.getElementById('divFechaAsignacion').style.display = tipo === 'Tarea' ? 'block' : 'none'; document.getElementById('divFechaEntrega').style.display = tipo === 'Tarea' ? 'block' : 'none'; }
+async function registrarActividad() {
+    let cId = document.getElementById('actCurso').value; let mId = document.getElementById('actMateria').value;
+    if(!cId || !mId || mId === "Todas") return alert("Seleccione curso y materia específica.");
+    let tipo = document.getElementById('actTipo').value; let detalle = document.getElementById('actDetalle').value;
+    let obj = { id: uid(), colegioId: state.currentColegioId, cursoId: cId, materiaId: mId, profesorId: state.currentProfesorId, tipo, fechaReg: getLocalDate(), fechaAsig: tipo === 'Tarea' ? document.getElementById('actFechaAsignacion').value : '', fechaEnt: tipo === 'Tarea' ? document.getElementById('actFechaEntrega').value : '', detalle, archivo: "" };
+    await apiPost('actividades', obj); await fetchDB(); 
+    let cur = db.cursos.find(c => c.id === cId); let mat = db.materias.find(m => m.id === mId);
+    let msg = `*Nueva Actividad (${tipo})*\nCurso: ${cur.nombre}\nMateria: ${mat.nombre}\nDetalle: ${detalle}\nEntrega: ${tipo === 'Tarea' ? document.getElementById('actFechaEntrega').value : 'En clase'}`;
+    if(cur.linkAlumnos || cur.linkPapas) { navigator.clipboard.writeText(msg).then(() => { alert("Registrada. Mensaje copiado. Abriendo WhatsApp..."); if(cur.linkAlumnos) window.open(cur.linkAlumnos, '_blank'); if(cur.linkPapas) window.open(cur.linkPapas, '_blank'); }); } else { alert("Registrada. Sin WhatsApp."); }
+    renderActividades(); document.getElementById('actDetalle').value = '';
+}
+function renderActividades() {
+    let cId = document.getElementById('actCurso').value; 
+    let mId = document.getElementById('actMateria').value;
+    let tb = document.getElementById('bodyHistorialAct'); 
+    
+    if(!cId || !mId) { 
+        tb.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Seleccione curso y materia para cargar.</td></tr>';
+        return; 
+    }
+    
+    let acts = db.actividades.filter(a => a.cursoId === cId && (mId === "Todas" || a.materiaId === mId) && a.profesorId === state.currentProfesorId); 
+    tb.innerHTML = '';
+    if (acts.length === 0) { tb.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay actividades registradas.</td></tr>'; return; }
+    acts.forEach(a => { 
+        let m = db.materias.find(x => x.id === a.materiaId);
+        // CORRECCIÓN: Solo mostrar botones si es el dueño
+        let actions = a.profesorId === state.currentProfesorId ? `<button class="btn btn-sm btn-warning" onclick="editarActividad('${a.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarActividad('${a.id}')">🗑️</button>` : '';
+        tb.innerHTML += `<tr><td>${formatDateSafe(a.fechaReg)}</td><td>${a.tipo}</td><td>${m ? m.nombre : ''}</td><td>${a.detalle}</td><td>${formatDateSafe(a.fechaEnt)}</td><td>${actions}</td></tr>`;
+    });
+}
+function editarActividad(id) { 
+    let a = db.actividades.find(x => x.id === id); 
+    if (a.profesorId !== state.currentProfesorId) return alert("No tienes permiso para editar esta actividad.");
+    document.getElementById('editActId').value = id; 
+    document.getElementById('edit_actDetalle').value = a.detalle; 
+    document.getElementById('edit_actFechaEnt').value = a.fechaEnt ? String(a.fechaEnt).split('T')[0] : ''; 
+    new bootstrap.Modal(document.getElementById('editActModal')).show(); 
+}
+async function guardarEdicionActividad() { 
+    let id = document.getElementById('editActId').value; let a = db.actividades.find(x => x.id === id); 
+    if (a.profesorId !== state.currentProfesorId) return alert("No tienes permiso para editar esta actividad.");
+    a.detalle = document.getElementById('edit_actDetalle').value; a.fechaEnt = document.getElementById('edit_actFechaEnt').value; 
+    await apiPut('actividades', id, a); await fetchDB(); bootstrap.Modal.getInstance(document.getElementById('editActModal')).hide(); renderActividades(); 
+}
+async function eliminarActividad(id) { 
+    let a = db.actividades.find(x => x.id === id); 
+    if (a.profesorId !== state.currentProfesorId) return alert("No tienes permiso para eliminar esta actividad.");
+    if(confirm("Eliminar actividad?")) { await apiDelete('actividades', id); await fetchDB(); renderActividades(); } 
+}
+
+function renderObservaciones() { 
+    updateMateriasProfesor('obsCurso', 'obsMateria', true); 
+    if(!document.getElementById('obsFecha').value) document.getElementById('obsFecha').value = getLocalDate();
+    renderObservacionesAlumnos(); 
+}
+function renderObservacionesAlumnos() {
+    let cId = document.getElementById('obsCurso').value; 
+    let mId = document.getElementById('obsMateria').value;
+    let tb = document.getElementById('bodyObsAlumnos');
+    
+    if(!cId || !mId || mId === "Todas") { 
+        tb.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Seleccione curso y materia para cargar.</td></tr>';
+        return; 
+    }
+    
+    let fecha = document.getElementById('obsFecha').value || getLocalDate();
+    let als = sortAlumnos(db.alumnos.filter(a => a.cursoId === cId)); 
+    tb.innerHTML = '';
+    if (als.length === 0) { tb.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay alumnos en este curso.</td></tr>'; return; }
+    
+    als.forEach(a => {
+        let existing = db.observaciones.find(o => o.alumnoId === a.id && o.cursoId === cId && o.materiaId === mId && String(o.fecha).includes(fecha) && o.profesorId === state.currentProfesorId);
+        let chF = existing && (existing.falto == 1 || existing.falto === true) ? 'checked' : '';
+        let chR = existing && (existing.retraso == 1 || existing.retraso === true) ? 'checked' : '';
+        let chS = existing && (existing.sinTarea == 1 || existing.sinTarea === true) ? 'checked' : '';
+        let txt = existing ? existing.disciplina || '' : '';
+        tb.innerHTML += `<tr><td>${a.apellido}, ${a.nombre} <input type="hidden" value="${a.id}"></td><td class="text-center"><input type="checkbox" id="falto_${a.id}" ${chF}></td><td class="text-center"><input type="checkbox" id="retraso_${a.id}" ${chR}></td><td class="text-center"><input type="checkbox" id="sintarea_${a.id}" ${chS}></td><td><input type="text" class="form-control form-control-sm" id="obs_${a.id}" value="${txt}"></td></tr>`;
+    });
+}
+async function guardarObservaciones() {
+    let cId = document.getElementById('obsCurso').value; let mId = document.getElementById('obsMateria').value;
+    let fecha = document.getElementById('obsFecha').value || getLocalDate();
+    if(!cId || !mId || mId === "Todas") return alert("Seleccione materia específica.");
+    let rows = document.getElementById('bodyObsAlumnos').getElementsByTagName('tr');
+    for(let r of rows) {
+        let aId = r.querySelector('input[type="hidden"]').value;
+        let falto = document.getElementById('falto_' + aId).checked; 
+        let retraso = document.getElementById('retraso_' + aId).checked; 
+        let sintarea = document.getElementById('sintarea_' + aId).checked; 
+        let obs = document.getElementById('obs_' + aId).value;
+
+        let existing = db.observaciones.find(o => o.alumnoId === aId && o.cursoId === cId && o.materiaId === mId && String(o.fecha).includes(fecha) && o.profesorId === state.currentProfesorId);
+        if (existing) {
+            existing.falto = falto; existing.retraso = retraso; existing.sinTarea = sintarea; existing.disciplina = obs;
+            await apiPut('observaciones', existing.id, existing);
+        } else if (falto || retraso || sintarea || obs) {
+            let obj = { id: uid(), colegioId: state.currentColegioId, cursoId: cId, materiaId: mId, alumnoId: aId, profesorId: state.currentProfesorId, fecha: fecha, falto, retraso, sinTarea: sintarea, disciplina: obs };
+            await apiPost('observaciones', obj);
+        }
+    }
+    await fetchDB(); 
+    alert("Observaciones guardadas.");
+    renderObservacionesAlumnos();
+}
+
+function renderRiesgo() { 
+    updateMateriasProfesor('riesgoCurso', 'riesgoMateria', false); 
+    document.getElementById('bodyRiesgoAlumnos').innerHTML = '<tr><td colspan="3" class="text-center text-muted">Seleccione curso, materia y periodo para cargar.</td></tr>';
+}
+function renderRiesgoAlumnos() {
+    let cId = document.getElementById('riesgoCurso').value;
+    let mId = document.getElementById('riesgoMateria').value;
+    let per = document.getElementById('riesgoPeriodo').value;
+    let tb = document.getElementById('bodyRiesgoAlumnos');
+    if(!cId || !mId || !per) { 
+        tb.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Seleccione curso, materia y periodo para cargar.</td></tr>';
+        return; 
+    }
+    let als = sortAlumnos(db.alumnos.filter(a => a.cursoId === cId)); 
+    tb.innerHTML = '';
+    if (als.length === 0) { tb.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No hay alumnos en este curso.</td></tr>'; return; }
+    als.forEach(a => {
+        let existing = db.riesgo_reprobacion.find(r => r.alumnoId === a.id && r.cursoId === cId && r.materiaId === mId && r.periodo === per && r.profesorId === state.currentProfesorId);
+        let chR = existing && (existing.enRiesgo == 1 || existing.enRiesgo === true) ? 'checked' : '';
+        let txt = existing ? existing.observacion || '' : '';
+        tb.innerHTML += `<tr><td>${a.apellido}, ${a.nombre} <input type="hidden" value="${a.id}"></td><td class="text-center"><input type="checkbox" id="riesgoCheck_${a.id}" ${chR}></td><td><input type="text" class="form-control form-control-sm" id="riesgoObs_${a.id}" value="${txt}"></td></tr>`;
+    });
+}
+async function guardarRiesgo() {
+    let cId = document.getElementById('riesgoCurso').value;
+    let mId = document.getElementById('riesgoMateria').value;
+    let per = document.getElementById('riesgoPeriodo').value;
+    if(!cId || !mId) return alert("Seleccione curso y materia.");
+    let rows = document.getElementById('bodyRiesgoAlumnos').getElementsByTagName('tr');
+    for(let r of rows) {
+        let aId = r.querySelector('input[type="hidden"]').value;
+        let enRiesgo = document.getElementById('riesgoCheck_' + aId).checked; 
+        let obs = document.getElementById('riesgoObs_' + aId).value;
+
+        let existing = db.riesgo_reprobacion.find(r => r.alumnoId === aId && r.cursoId === cId && r.materiaId === mId && r.periodo === per && r.profesorId === state.currentProfesorId);
+        if (existing) {
+            existing.enRiesgo = enRiesgo; existing.observacion = obs;
+            await apiPut('riesgo_reprobacion', existing.id, existing);
+        } else if (enRiesgo || obs) {
+            let obj = { id: uid(), colegioId: state.currentColegioId, cursoId: cId, materiaId: mId, alumnoId: aId, profesorId: state.currentProfesorId, periodo: per, enRiesgo, observacion: obs };
+            await apiPost('riesgo_reprobacion', obj);
+        }
+    }
+    await fetchDB(); 
+    alert("Riesgos guardados.");
+    renderRiesgoAlumnos();
+}
+
+function updateReportSelects(p) {
+    p = p || '';
+    let cId = document.getElementById('repCurso' + p).value; 
+    let mats = db.materias.filter(m => m.colegioId === state.currentColegioId);
+    document.getElementById('repMateria' + p).innerHTML = '<option value="Todas">Todas</option>' + mats.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+    let als = sortAlumnos(db.alumnos.filter(a => a.cursoId === cId)); 
+    document.getElementById('repAlumno' + p).innerHTML = '<option value="Todos">Todos</option>' + als.map(a => `<option value="${a.id}">${a.apellido} ${a.nombre}</option>`).join('');
+}
+function generarPDF(p) {
+    p = p || '';
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    let cId = document.getElementById('repCurso' + p).value; 
+    let mId = document.getElementById('repMateria' + p).value; 
+    let tipo = document.getElementById('repTipo' + p).value; 
+    let aId = document.getElementById('repAlumno' + p).value;
+    let col = db.colegios.find(c => c.id === state.currentColegioId); let cur = db.cursos.find(c => c.id === cId); let mat = db.materias.find(m => m.id === mId); let al = db.alumnos.find(a => a.id === aId);
+    doc.setFontSize(18); doc.text("Informe Educativo", 14, 20); doc.setFontSize(12);
+    let y = 30; doc.text(`Colegio: ${col.nombre}`, 14, y); y += 8; doc.text(`Curso: ${cur.nombre}`, 14, y); y += 8;
+    if(aId !== "Todos" && al) { doc.text(`Alumno: ${al.apellido} ${al.nombre}`, 14, y); y += 8; }
+    if(mId !== "Todas" && mat) { doc.text(`Materia: ${mat.nombre}`, 14, y); y += 8; } y += 2;
+    if(tipo === "Actividades" || tipo === "Todos") {
+        let acts = db.actividades.filter(a => a.cursoId === cId && (mId === "Todas" || a.materiaId === mId));
+        if(acts.length > 0) { doc.autoTable({ startY: y, head: [['Fecha', 'Materia', 'Tipo', 'Detalle', 'Entrega']], body: acts.map(a => { let m = db.materias.find(x => x.id === a.materiaId); return [formatDateSafe(a.fechaReg), m ? m.nombre : '', a.tipo, a.detalle, formatDateSafe(a.fechaEnt)]; }), theme: 'striped', headStyles: { fillColor: [26, 35, 126] } }); y = doc.lastAutoTable.finalY + 10; } 
+        else { doc.text("Sin actividades.", 14, y); y += 10; }
+    }
+    if(tipo === "Observaciones" || tipo === "Todos") {
+        let obs = db.observaciones.filter(o => o.cursoId === cId && (mId === "Todas" || o.materiaId === mId)); if(aId !== "Todos") obs = obs.filter(o => o.alumnoId === aId);
+        if(obs.length > 0) { doc.autoTable({ startY: y, head: [['Fecha', 'Materia', 'Alumno', 'Detalles']], body: obs.map(o => { let a = db.alumnos.find(x => x.id === o.alumnoId); let m = db.materias.find(x => x.id === o.materiaId); let det = []; if(o.falto == 1 || o.falto === true) det.push("Faltó"); if(o.retraso == 1 || o.retraso === true) det.push("Retraso"); if(o.sinTarea == 1 || o.sinTarea === true) det.push("Sin Tarea"); if(o.disciplina) det.push(o.disciplina); return [formatDateSafe(o.fecha), m ? m.nombre : '', a ? a.apellido + ' ' + a.nombre : '', det.join(', ')]; }), theme: 'striped', headStyles: { fillColor: [204, 0, 0] } }); } 
+        else { doc.text("Sin observaciones.", 14, y); }
+    }
+    doc.save('Informe_Educativo.pdf');
+}
+function generarPDFRiesgo(p) {
+    p = p || '';
+    const { jsPDF } = window.jspdf; const doc = new jsPDF('l'); 
+    let cId = document.getElementById('repRiesgoCurso' + p).value; 
+    let per = document.getElementById('repRiesgoPeriodo' + p).value;
+    let col = db.colegios.find(c => c.id === state.currentColegioId); let cur = db.cursos.find(c => c.id === cId);
+    let mats = db.materias.filter(m => m.colegioId === state.currentColegioId);
+    let als = sortAlumnos(db.alumnos.filter(a => a.cursoId === cId)); 
+    doc.setFontSize(18); doc.text("Informe de Alumnos en Riesgo", 14, 20);
+    doc.setFontSize(12); doc.text(`Colegio: ${col.nombre} | Curso: ${cur.nombre} | Periodo: ${per}`, 14, 30);
+    let head = [['Alumno', ...mats.map(m => m.nombre)]];
+    let body = als.map(a => {
+        let row = [`${a.apellido}, ${a.nombre}`];
+        mats.forEach(m => {
+            let atRisk = db.riesgo_reprobacion.find(r => r.alumnoId === a.id && r.materiaId === m.id && r.periodo === per && (r.enRiesgo == 1 || r.enRiesgo === true));
+            row.push(atRisk ? 'X' : '');
+        });
+        return row;
+    });
+    doc.autoTable({ startY: 40, head: head, body: body, theme: 'grid', headStyles: { fillColor: [204, 0, 0], fontSize: 8 }, bodyStyles: { fontSize: 8 },
+        didParseCell: function(data) {
+            if (data.section === 'body' && data.column.index > 0 && data.cell.raw === 'X') {
+                data.cell.styles.fillColor = [255, 0, 0]; data.cell.styles.textColor = [255, 255, 255]; data.cell.styles.halign = 'center';
+            }
+        }
+    });
+    doc.save('Informe_Riesgo.pdf');
+}
+
+function renderTutorActividades() {
+    let aId = state.currentTutorAlumnoId; if(!aId) return; let al = db.alumnos.find(a => a.id === aId); if(!al) return;
+    let acts = db.actividades.filter(a => a.cursoId === al.cursoId); let tb = document.getElementById('bodyTutorAct'); tb.innerHTML = '';
+    acts.forEach(a => { let m = db.materias.find(x => x.id === a.materiaId); let estado = a.fechaEnt && new Date() > new Date(a.fechaEnt) ? "Atrasado" : "A tiempo"; tb.innerHTML += `<tr><td>${formatDateSafe(a.fechaReg)}</td><td>${m ? m.nombre : ''}</td><td>${a.tipo}</td><td>${a.detalle}</td><td>${formatDateSafe(a.fechaEnt)}</td><td>${estado}</td></tr>`; });
+}
+function renderTutorObservaciones() {
+    let aId = state.currentTutorAlumnoId; if(!aId) return; let obs = db.observaciones.filter(o => o.alumnoId === aId); let tb = document.getElementById('bodyTutorObs'); tb.innerHTML = '';
+    obs.forEach(o => { let m = db.materias.find(x => x.id === o.materiaId); let det = []; if(o.falto == 1 || o.falto === true) det.push("Faltó"); if(o.retraso == 1 || o.retraso === true) det.push("Retraso"); if(o.sinTarea == 1 || o.sinTarea === true) det.push("Sin Tarea"); if(o.disciplina) det.push(o.disciplina); tb.innerHTML += `<tr><td>${formatDateSafe(o.fecha)}</td><td>${m ? m.nombre : ''}</td><td>${det.join(', ')}</td></tr>`; });
+}
+
+async function cargarExcel(inputId) {
+    let input = document.getElementById(inputId); let file = input.files[0]; if(!file) return;
+    let reader = new FileReader();
+    reader.onload = async function(e) {
+        let data = new Uint8Array(e.target.result); let workbook = XLSX.read(data, {type: 'array'}); let firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        let rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1, raw: false});
+        for(let index = 1; index < rows.length; index++) {
+            let row = rows[index];
+            if(inputId === 'excelColegios') { if(row[0] && row[1]) { let obj = {id: uid(), nombre: String(row[0]), codigo: String(row[1])}; await apiPost('colegios', obj); } }
+            if(inputId === 'excelProfesores') { if(row[0] && row[1]) { let obj = {id: uid(), colegioId: state.currentColegioId, nombre: String(row[0]), codigo: String(row[1])}; await apiPost('profesores', obj); } }
+        }
+        await fetchDB();
+        alert("Carga masiva completada."); input.value = '';
+        if(inputId === 'excelColegios') { renderColegios(); renderFiltroAdmins(); } 
+        if(inputId === 'excelProfesores') {
+            renderProfesores(); 
+            updateAdminSelects();
+        }
+    }; reader.readAsArrayBuffer(file);
+}
+async function cargarAlumnosExcel() {
+    let input = document.getElementById('excelAlumnos'); let file = input.files[0];
+    if(!file) return;
+    let reader = new FileReader();
+    reader.onload = async function(e) {
+        let data = new Uint8Array(e.target.result); let workbook = XLSX.read(data, {type: 'array'});
+        let count = 0;
+        for (let sheetName of workbook.SheetNames) {
+            let cursoId;
+            let curso = db.cursos.find(c => c.nombre.toLowerCase() === sheetName.toLowerCase() && c.colegioId === state.currentColegioId);
+            if (!curso) {
+                let newC = { id: uid(), colegioId: state.currentColegioId, nombre: sheetName, linkAlumnos: '', linkPapas: '' };
+                await apiPost('cursos', newC); cursoId = newC.id;
+            } else { cursoId = curso.id; }
+            let sheet = workbook.Sheets[sheetName];
+            let rows = XLSX.utils.sheet_to_json(sheet, {header: 1, raw: false});
+            for(let index = 1; index < rows.length; index++) {
+                let row = rows[index];
+                if(row[0]) {
+                    let doc = String(row[2] || '');
+                    let exists = db.alumnos.find(a => a.documento === doc && a.cursoId === cursoId);
+                    if (!exists) {
+                        let obj = { id: uid(), colegioId: state.currentColegioId, cursoId, nombre: row[0] || '', apellido: row[1] || '', documento: doc, tutor: row[3] || '', telTutor: String(row[4] || ''), telAlumno: String(row[5] || '') };
+                        await apiPost('alumnos', obj); count++;
+                    }
+                }
+            }
+        }
+        await fetchDB(); 
+        renderCursosPanel(); 
+        alert(count + " alumnos cargados/verificados."); input.value = '';
+    }; reader.readAsArrayBuffer(file);
+}
+
+window.onload = async function() { await fetchDB(); showView('view_acceso'); };
+</script>
+</body>
+</html>
