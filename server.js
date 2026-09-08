@@ -2,18 +2,21 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Conexión a Supabase mediante variable de entorno
+// Conexión a Supabase
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Servir archivos estáticos desde la carpeta 'public'
-app.use(express.static('public'));
+// Configuración a prueba de balas para encontrar el HTML
+const publicPath = fs.existsSync(path.join(__dirname, 'public')) ? path.join(__dirname, 'public') : __dirname;
+app.use(express.static(publicPath));
 
 const validTables = ['colegios', 'profesores', 'administrativos', 'cursos', 'materias', 'alumnos', 'actividades', 'observaciones', 'riesgo_reprobacion', 'asignaciones'];
 
@@ -95,9 +98,14 @@ app.delete('/api/:table/:id', async (req, res) => {
     } catch (error) { res.status(500).json({error: error.message}); }
 });
 
-// IMPORTANTE: Esta línea debe ir al final de todo, para que cualquier ruta que no sea /api cargue el HTML
+// Redirigir cualquier ruta que no sea /api al index.html
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    let indexPath = path.join(publicPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send('No se encontró el archivo index.html. Revisa tu repositorio de GitHub.');
+    }
 });
 
 const PORT = process.env.PORT || 3000;
