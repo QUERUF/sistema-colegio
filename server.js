@@ -13,7 +13,8 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir archivos estáticos desde la carpeta 'public'
+app.use(express.static('public'));
 
 const validTables = ['colegios', 'profesores', 'administrativos', 'cursos', 'materias', 'alumnos', 'actividades', 'observaciones', 'riesgo_reprobacion', 'asignaciones'];
 
@@ -93,6 +94,11 @@ app.delete('/api/:table/:id', async (req, res) => {
         await pool.query(`DELETE FROM ${req.params.table} WHERE id = $1`, [req.params.id]);
         res.json({success: true});
     } catch (error) { res.status(500).json({error: error.message}); }
+});
+
+// IMPORTANTE: Esta línea debe ir al final de todo, para que cualquier ruta que no sea /api cargue el HTML
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
