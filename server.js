@@ -1,20 +1,38 @@
 const express = require('express');
-const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { MongoClient } = require('mongodb');
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Conexión a Supabase
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+// Conexión a MongoDB
+const uri = process.env.DATABASE_URL;
+const client = new MongoClient(uri);
+
+let db;
+
+async function connectDB() {
+    if (!db) {
+        await client.connect();
+        db = client.db('control_educativo');
+        console.log("Conectado a MongoDB Atlas");
+    }
+    return db;
+}
+
+// Middleware para asegurar la conexión
+app.use(async (req, res, next) => {
+    try {
+        req.db = await connectDB();
+        next();
+    } catch (err) {
+        res.status(500).json({error: "Error de conexión a la base de datos"});
+    }
 });
 
-// Configuración a prueba de balas para encontrar el HTML
 const publicPath = fs.existsSync(path.join(__dirname, 'public')) ? path.join(__dirname, 'public') : __dirname;
 app.use(express.static(publicPath));
 
@@ -22,7 +40,7 @@ const validTables = ['colegios', 'profesores', 'administrativos', 'cursos', 'mat
 
 app.post('/api/clean-db', async (req, res) => {
     try {
-        for (const t of validTables) { await pool.query(`TRUNCATE TABLE ${t}`); }
+        for (const t of validTables) { await req.db.collection(t).deleteMany({}); }
         res.json({success: true});
     } catch (error) { res.status(500).json({error: error.message}); }
 });
@@ -31,8 +49,7 @@ app.get('/api/backup', async (req, res) => {
     try {
         let backup = {};
         for (const t of validTables) {
-            const r = await pool.query(`SELECT * FROM ${t}`);
-            backup[t] = r.rows;
+            backup[t] = await req.db.collection(t).find({}).toArray();
         }
         res.json(backup);
     } catch (error) { res.status(500).json({error: error.message}); }
@@ -42,13 +59,9 @@ app.post('/api/restore', async (req, res) => {
     try {
         const backup = req.body;
         for (const t of validTables) {
-            await pool.query(`TRUNCATE TABLE ${t}`);
+            await req.db.collection(t).deleteMany({});
             if (backup[t] && backup[t].length > 0) {
-                const keys = Object.keys(backup[t][0]);
-                const values = backup[t].map(row => keys.map(k => row[k]));
-                const placeholders = backup[t].map((_, i) => `(${keys.map((_, j) => `$${i * keys.length + j + 1}`).join(', ')})`).join(', ');
-                const flatValues = values.flat();
-                await pool.query(`INSERT INTO ${t} (${keys.join(', ')}) VALUES ${placeholders}`, flatValues);
+                await req.db.collection(t).insertMany(backup[t]);
             }
         }
         res.json({success: true});
@@ -57,21 +70,17 @@ app.post('/api/restore', async (req, res) => {
 
 app.get('/api/:table', async (req, res) => {
     try {
-        if (!validTables.includes(req.params.table)) return res.status(400).json({error: "Tabla inválida"});
-        const r = await pool.query(`SELECT * FROM ${req.params.table}`);
-        res.json(r.rows);
+        if (!validTables.includes(req.params.table)) return res.status(400).json({error: "Colección inválida"});
+        const r = await req.db.collection(req.params.table).find({}).toArray();
+        res.json(r);
     } catch (error) { res.status(500).json({error: error.message}); }
 });
 
 app.post('/api/:table', async (req, res) => {
     try {
         const table = req.params.table;
-        if (!validTables.includes(table)) return res.status(400).json({error: "Tabla inválida"});
-        const data = req.body;
-        const keys = Object.keys(data);
-        const values = keys.map(k => data[k]);
-        const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
-        await pool.query(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`, values);
+        if (!validTables.includes(table)) return res.status(400).json({error: "Colección inválida"});
+        await req.db.collection(table).insertOne(req.body);
         res.json({success: true});
     } catch (error) { res.status(500).json({error: error.message}); }
 });
@@ -79,21 +88,17 @@ app.post('/api/:table', async (req, res) => {
 app.put('/api/:table/:id', async (req, res) => {
     try {
         const table = req.params.table;
-        if (!validTables.includes(table)) return res.status(400).json({error: "Tabla inválida"});
+        if (!validTables.includes(table)) return res.status(400).json({error: "Colección inválida"});
         const id = req.params.id;
-        const data = req.body;
-        const keys = Object.keys(data);
-        const values = keys.map(k => data[k]);
-        const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
-        await pool.query(`UPDATE ${table} SET ${setClause} WHERE id = $${keys.length + 1}`, [...values, id]);
+        await req.db.collection(table).updateOne({ id: id }, { $set: req.body });
         res.json({success: true});
     } catch (error) { res.status(500).json({error: error.message}); }
 });
 
 app.delete('/api/:table/:id', async (req, res) => {
     try {
-        if (!validTables.includes(req.params.table)) return res.status(400).json({error: "Tabla inválida"});
-        await pool.query(`DELETE FROM ${req.params.table} WHERE id = $1`, [req.params.id]);
+        if (!validTables.includes(req.params.table)) return res.status(400).json({error: "Colección inválida"});
+        await req.db.collection(req.params.table).deleteOne({ id: req.params.id });
         res.json({success: true});
     } catch (error) { res.status(500).json({error: error.message}); }
 });
@@ -104,7 +109,7 @@ app.get('*', (req, res) => {
     if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
     } else {
-        res.status(404).send('No se encontró el archivo index.html. Revisa tu repositorio de GitHub.');
+        res.status(404).send('No se encontró el archivo index.html.');
     }
 });
 
